@@ -1,0 +1,29 @@
+# Use RHEL 8 as the base image
+FROM registry.access.redhat.com/ubi8/ubi:latest
+
+# Define a build argument for JDK version
+ARG JDK_VERSION
+
+# Set environment variable for Java version
+ENV JAVA_HOME /usr/local/openjdk-$JDK_VERSION
+
+# Install necessary tools
+RUN yum install -y wget unzip && \
+    yum clean all
+
+# Download and install OpenJDK
+RUN JDK_URL="https://download.java.net/java/GA/jdk${JDK_VERSION}/GPL/openjdk-${JDK_VERSION}_linux-x64_bin.tar.gz" && \
+    wget -qO- $JDK_URL | tar xz -C /usr/local && \
+    ln -s $JAVA_HOME /usr/local/openjdk && \
+    rm -rf $JAVA_HOME/lib/src.zip $JAVA_HOME/lib/missioncontrol $JAVA_HOME/lib/visualvm
+
+# Enable unlimited policy for Java 8
+RUN if [[ "$JDK_VERSION" == 8* ]]; then \
+        sed -i '/crypto.policy/s/^#//g' $JAVA_HOME/jre/lib/security/java.security; \
+    fi
+
+# Set default Java version based on the provided JDK_VERSION argument
+ENV PATH $JAVA_HOME/bin:$PATH
+
+# Display Java version after installation
+RUN java -version
